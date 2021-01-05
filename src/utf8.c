@@ -273,12 +273,6 @@ int TY_(DecodeUTF8BytesToChar)( uint* c, uint firstByte, ctmbstr successorBytes,
     if (!hasError && (n > kMaxUTF8FromUCS4))
         hasError = yes;
 
-#if 0 /* Breaks Big5 D8 - DF */
-    if (!hasError && (n >= kUTF16LowSurrogateBegin) && (n <= kUTF16HighSurrogateEnd))
-        /* unpaired surrogates not allowed */
-        hasError = yes;
-#endif
-
     if (!hasError)
     {
         int lo, hi;
@@ -323,7 +317,7 @@ int TY_(DecodeUTF8BytesToChar)( uint* c, uint firstByte, ctmbstr successorBytes,
        fprintf( stderr, "0x%02x ", firstByte );
        for (i = 1; i < bytes; i++)
            fprintf( stderr, "0x%02x ", buf[i - 1] );
-       fprintf( stderr, " = U+%04ulx\n", n );
+       fprintf( stderr, " = U+%04X\n", n );
     }
 #endif
 
@@ -364,11 +358,6 @@ int TY_(EncodeCharToUTF8Bytes)( uint c, tmbstr encodebuf,
         bytes = 3;
         if ( c == kUTF8ByteSwapNotAChar || c == kUTF8NotAChar )
             hasError = yes;
-#if 0 /* Breaks Big5 D8 - DF */
-        else if ( c >= kUTF16LowSurrogateBegin && c <= kUTF16HighSurrogateEnd )
-            /* unpaired surrogates not allowed */
-            hasError = yes;
-#endif
     }
     else if (c <= 0x1FFFFF)  /* 1111 0XXX  four bytes */
     {
