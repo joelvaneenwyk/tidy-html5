@@ -1,0 +1,12 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+
+    "cmake.generator": "Visual Studio 14 2015 Win64",
+    "cmake.buildDirectory": "${workspaceFolder}/build/cmake",
+    "cmake.buildArgs": [
+    ],
+    "cmake.configureSettings": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "./bin"
+    }
+}

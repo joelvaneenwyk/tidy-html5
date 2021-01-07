@@ -6,6 +6,7 @@
 *.user
 *.suo
 *.sdf
+*.tlog
 /test
 /test/testall.log
 /test/tmp/
