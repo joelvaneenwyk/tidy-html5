@@ -10,7 +10,7 @@
  *
  * @note It should be largely unnecessary to modify this file unless adding
  * support for a completely new architecture. Most options defined in this
- * file specify defaults that can be overriden by the build system; for
+ * file specify defaults that can be overridden by the build system; for
  * example, passing -D flags to CMake.
  *
  * @author  Charles Reitzel [creitzel@rcn.com]
@@ -507,12 +507,12 @@ extern "C" {
 #    define setmode _setmode
 #  endif
 
-# if defined(_MSC_VER)
+#  if defined(_MSC_VER)
 #    define fileno _fileno
-#if !defined(NDEBUG) && !defined(ENABLE_DEBUG_LOG) && !defined(DISABLE_DEBUG_LOG)
-#define ENABLE_DEBUG_LOG
-#endif
-#endif
+#    if !defined(NDEBUG) && !defined(ENABLE_DEBUG_LOG) && !defined(DISABLE_DEBUG_LOG)
+#      define ENABLE_DEBUG_LOG
+#    endif
+#  endif
 
 #  define access _access
 #  define strcasecmp _stricmp
@@ -553,6 +553,13 @@ extern "C" {
 #    endif
 #  endif
 
+#  ifndef TIDY_THREAD_LOCAL
+#    ifdef _MSC_VER
+#      define TIDY_THREAD_LOCAL __declspec( thread )
+#    endif
+#  endif
+
+
 #endif /* _WIN32 */
 
 
@@ -579,7 +586,7 @@ extern "C" {
  * Visibility support
  *   With GCC 4,  __attribute__ ((visibility("default"))) can be used
  *   along compiling with tidylib with "-fvisibility=hidden". See
- *   http://gcc.gnu.org/wiki/Visibility and build/gmake/Makefile.
+ *   https://gcc.gnu.org/wiki/Visibility and build/gmake/Makefile.
  *===========================================================================*/
 /*
 #if defined(__GNUC__) && __GNUC__ >= 4
@@ -598,6 +605,14 @@ extern "C" {
 
 #ifndef TIDY_STRUCT
 #  define TIDY_STRUCT
+#endif
+
+#ifndef TIDY_THREAD_LOCAL
+#  define TIDY_THREAD_LOCAL __thread
+#endif
+
+#ifndef TIDY_INDENTATION_LIMIT
+#  define TIDY_INDENTATION_LIMIT 50
 #endif
 
 typedef unsigned char byte;

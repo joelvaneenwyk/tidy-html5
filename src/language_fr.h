@@ -1,4 +1,4 @@
-#ifndef language_fr_h
+﻿#ifndef language_fr_h
 #define language_fr_h
 /*
  * language_fr.h
@@ -21,14 +21,14 @@
  *     `poconvert.rb msgunfmt language_fr.h` (our own
  *     conversion tool) to generate a fresh PO from this file first!
  *
- * (c) 2015-2017 HTACG
+ * (c) 2015-2021 HTACG
  * See tidy.h and access.h for the copyright notice.
  *
  * Template Created by Jim Derry on 01/14/2016.
  *
- * Orginating PO file metadata:
+ * Originating PO file metadata:
  *   PO_LAST_TRANSLATOR=jderry
- *   PO_REVISION_DATE=2017-10-05 15:13:40
+ *   PO_REVISION_DATE=2021-07-30 10:35:03
  */
 
 #ifdef _MSC_VER
@@ -65,7 +65,7 @@ static languageDefinition language_fr = { whichPluralForm_fr, {
         "Cette option précise le niveau de contrôle d'accessibilité que Tidy doit éventuellement exécuter. "
         "Le <br/>niveau <var>0 (Tidy Classic)</var> est équivalent au contrôle d'accessibilité de Tidy "
         "Classic. <br/>Pour plus d'informations sur le contrôle d'accessibilité de Tidy, consultez <a href="
-        "\"http://www.html-tidy.org/accessibility/\"> la page d'accessibilité de Tidy</a>. "
+        "\"https://www.html-tidy.org/accessibility/\"> la page d'accessibilité de Tidy</a>. "
     },
     { TidyAltText,                                   0,        
         "Cette option précise la valeur par défaut du texte <code>alt=</code> qu'utilise Tidy pour les "
@@ -505,8 +505,7 @@ static languageDefinition language_fr = { whichPluralForm_fr, {
     },
     { TidyWrapScriptlets,                            0,        
         "Cette option précise si Tidy doit ajouter des sauts de lignes aux chaînes littérales dans les "
-        "attributs de script. <br/>Tidy prend en charge la césure des longues chaînes littérales de scripts "
-        "en ajoutant un caractère de barre oblique arrière (backslash) avant le saut de ligne. "
+        "attributs de script. "
     },
     { TidyWrapSection,                               0,        
         "Cette option précise si Tidy doit ajouter des sauts de ligne pour le texte compris dans des balises "
@@ -628,13 +627,13 @@ static languageDefinition language_fr = { whichPluralForm_fr, {
         "dans l'objectif de transformation de caractères Unicode. ISO/IEC 10646 \n"
         "ne permet pas la liaison des substituts non appairés, ni U+FFFE ni U+FFFF \n"
         "(mais il permet d'autres non-caractères). Pour plus d'informations veuillez-vous\n"
-        "référer à http://www.unicode.org/ et http://www.cl.cam.ac.uk/~mgk25/unicode.html\n"
+        "référer à https://home.unicode.org/ et https://www.cl.cam.ac.uk/~mgk25/unicode.html\n"
     },
     { TEXT_INVALID_UTF16,                            0,        
         "Les codes de caractères pour UTF-16 doivent être dans l'intervalle: U+0000 à U+10FFFF.\n"
         "La définition de UTF-16 dans l'annexe C de l'ISO/IEC 10646-1:2000 n'autorise pas la \n"
         "liaison de substituts non appairés. Pour plus d'informations, veuillez vous référer\n"
-        "à http://www.unicode.org/ et http://www.cl.cam.ac.uk/~mgk25/unicode.html\n"
+        "à https://home.unicode.org/ et https://www.cl.cam.ac.uk/~mgk25/unicode.html\n"
     },
     { TEXT_INVALID_URI,                              0,        
         "Les URIs doivent être correctement protégés, ils ne doivent pas contenir \n"
@@ -645,7 +644,7 @@ static languageDefinition language_fr = { whichPluralForm_fr, {
         "échapper ces URI et quelques scripts côté serveur dépendent de ceci. \n"
         "Si vous voulez dépendre de ceci, vous devez échapper l'URI de votre \n"
         "côté. Pour plus d'informations, veuillez vous référer à\n"
-        "http://www.w3.org/International/O-URL-and-ident.html\n"
+        "https://www.w3.org/International/O-URL-and-ident.html\n"
     },
     { TEXT_BAD_FORM,                                 0,        
         "Vous devrez peut-être déplacer une, ou les deux, balises <form>et</form>. \n"
@@ -700,12 +699,12 @@ static languageDefinition language_fr = { whichPluralForm_fr, {
     },
     { TEXT_ACCESS_ADVICE1,                           0,        
         "Pour plus d'informations sur la façon de rendre vos pages\n"
-        "accessibles, voir http://www.w3.org/WAI/GL"
+        "accessibles, voir https://www.w3.org/WAI/GL"
     },
     { TEXT_ACCESS_ADVICE2,                           0,        
         "Pour plus d'informations sur la façon de rendre vos pages \n"
-        "accessibles, voir http://www.w3.org/WAI/GL et \n"
-        "http://www.html-tidy.org/Accessibility/"
+        "accessibles, voir https://www.w3.org/WAI/GL et \n"
+        "https://www.html-tidy.org/Accessibility/"
     },
     { TEXT_USING_LAYER,                              0,        
         "Le mécanisme de positionnement au moyen des feuilles de style \n"
@@ -748,9 +747,9 @@ static languageDefinition language_fr = { whichPluralForm_fr, {
         "À propos de HTML Tidy: https://github.com/htacg/tidy-html5\n"
         "Rapports de bugs et commentaires: https://github.com/htacg/tidy-html5/issues\n"
         "Liste officielle de diffusion: https://lists.w3.org/Archives/Public/public-htacg/\n"
-        "Dernière spécification HTML: http://dev.w3.org/html5/spec-author-view/\n"
-        "Validez vos documents HTML: http://validator.w3.org/nu/\n"
-        "Encouragez votre entreprise à rejoindre le W3C: http://www.w3.org/Consortium\n"
+        "Dernière spécification HTML: https://html.spec.whatwg.org/multipage/\n"
+        "Validez vos documents HTML: https://validator.w3.org/nu/\n"
+        "Encouragez votre entreprise à rejoindre le W3C: https://www.w3.org/Consortium\n"
         "\n"
     },
     { TEXT_GENERAL_INFO_PLEA,                        0,        
@@ -1098,12 +1097,12 @@ static languageDefinition language_fr = { whichPluralForm_fr, {
         "Renseignements\n"
         "===========\n"
         "Pour plus d'informations à propos de HTML Tidy, voir\n"
-        "  http://www.html-tidy.org/\n"
+        "  https://www.html-tidy.org/\n"
         "\n"
         "Pour plus d'informations sur le langage HTML, consultez les rubriques suivantes:\n"
         "\n"
-        "  HTML: Édition pour les auteurs Web (de la dernière spécification HTML)\n"
-        "  http://dev.w3.org/html5/spec-author-view\n"
+        "  HTML Living Standard (de la dernière spécification HTML)\n"
+        "  https://html.spec.whatwg.org/multipage/\n"
         "\n"
     },
     { TC_TXT_HELP_CONFIG,                            0,        
@@ -1172,4 +1171,3 @@ static languageDefinition language_fr = { whichPluralForm_fr, {
 
 
 #endif /* language_fr_h */
-

@@ -16,6 +16,7 @@
 #include "pprint.h"
 #include "access.h"
 #include "message.h"
+#include "parser.h"
 
 #ifndef MAX
 #define MAX(a,b) (((a) > (b))?(a):(b))
@@ -41,19 +42,20 @@ struct _TidyDocImpl
     Lexer*              lexer;
 
     /* Config + Markup Declarations */
-    TidyConfigImpl          config;
-    TidyTagImpl             tags;
-    TidyAttribImpl          attribs;
-    TidyAccessImpl          access;
-    TidyMutedMessages       muted;
+    TidyConfigImpl           config;
+    TidyTagImpl              tags;
+    TidyAttribImpl           attribs;
+    TidyAccessImpl           access;
+    TidyMutedMessages        muted;
 
     /* The Pretty Print buffer */
-    TidyPrintImpl       pprint;
+    TidyPrintImpl            pprint;
 
     /* I/O */
     StreamIn*                docIn;
     StreamOut*               docOut;
     StreamOut*               errout;
+
     TidyReportFilter         reportFilter;
     TidyReportCallback       reportCallback;
     TidyMessageCallback      messageCallback;
@@ -61,6 +63,8 @@ struct _TidyDocImpl
     TidyConfigCallback       pConfigCallback;
     TidyConfigChangeCallback pConfigChangeCallback;
     TidyPPProgress           progressCallback;
+
+    TidyParserStack          stack;
 
     /* Parse + Repair Results */
     uint                optionErrors;
@@ -79,6 +83,8 @@ struct _TidyDocImpl
 
     Bool                HTML5Mode;   /* current mode is html5 */
     Bool                xmlDetected; /* true if XML was used/detected */
+    
+    uint                indent_char; /* space or tab character, for indenting */
 
     /* Memory allocator */
     TidyAllocator*      allocator;
@@ -153,7 +159,7 @@ struct _TidyMessageImpl
 #define TidyDocFree(doc, block) TidyFree((doc)->allocator, block)
 #define TidyDocPanic(doc, msg) TidyPanic((doc)->allocator, msg)
 
-int          TY_(DocParseStream)( TidyDocImpl* impl, StreamIn* in );
+TY_PRIVATE int          TY_(DocParseStream)( TidyDocImpl* impl, StreamIn* in );
 
 /*
    [i_a] generic node tree traversal code; used in several spots.
@@ -175,6 +181,6 @@ typedef enum
 
 typedef NodeTraversalSignal NodeTraversalCallBack(TidyDocImpl* doc, Node* node, void *propagate);
 
-NodeTraversalSignal TY_(TraverseNodeTree)(TidyDocImpl* doc, Node* node, NodeTraversalCallBack *cb, void *propagate);
+TY_PRIVATE NodeTraversalSignal TY_(TraverseNodeTree)(TidyDocImpl* doc, Node* node, NodeTraversalCallBack *cb, void *propagate);
 
 #endif /* __TIDY_INT_H__ */

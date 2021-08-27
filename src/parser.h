@@ -42,6 +42,89 @@
 
 
 /**
+ *  This typedef represents the state of a parser when it enters and exits.
+ *  When the parser needs to finish work on the way back up the stack, it will
+ *  push one of these records to the stack, and it will pop a record from the
+ *  stack upon re-entry.
+ */
+typedef struct _TidyParserMemory
+{
+    Parser       *identity;      /**< Which parser pushed this record? */
+    Node         *original_node; /**< Originally provided node at entry. */
+    Node         *reentry_node;  /**< The node with which to re-enter. */
+    GetTokenMode reentry_mode;   /**< The token mode to use when re-entering. */
+    int          reentry_state;  /**< State to set during re-entry. Defined locally in each parser. */
+    GetTokenMode mode;           /**< The caller will peek at this value to get the correct mode. */
+    int          register_1;     /**< Local variable storage. */
+    int          register_2;     /**< Local variable storage. */
+} TidyParserMemory;
+
+
+/**
+ *  This typedef represents a stack of parserState. The Tidy document has its
+ *  own instance of this.
+ */
+typedef struct _TidyParserStack
+{
+    TidyParserMemory* content;    /**< A state record. */
+    uint size;                    /**< Current size of the stack. */
+    int top;                      /**< Top of the stack. */
+} TidyParserStack;
+
+
+/**
+ *  Allocates and initializes the parser's stack. TidyCreate will perform
+ *  this automatically.
+ */
+void TY_(InitParserStack)( TidyDocImpl* doc );
+
+
+/**
+ *  Frees the parser's stack when done. TidyRelease will perform this
+ *  automatically.
+ */
+void TY_(FreeParserStack)( TidyDocImpl* doc );
+
+
+/**
+ *  Indicates whether or not the stack is empty.
+ */
+Bool TY_(isEmptyParserStack)( TidyDocImpl* doc );
+
+
+/**
+ *  Peek at the parser memory.
+ */
+TidyParserMemory TY_(peekMemory)( TidyDocImpl* doc );
+
+
+/**
+ *  Peek at the parser memory "identity" field. This is just a convenience
+ *  to avoid having to create a new struct instance in the caller.
+ */
+Parser* TY_(peekMemoryIdentity)( TidyDocImpl* doc );
+
+
+/**
+ *  Peek at the parser memory "mode" field. This is just a convenience
+ *  to avoid having to create a new struct instance in the caller.
+ */
+GetTokenMode TY_(peekMemoryMode)( TidyDocImpl* doc );
+
+
+/**
+ *  Pop out a parser memory.
+ */
+TidyParserMemory TY_(popMemory)( TidyDocImpl* doc );
+
+
+/**
+ * Push the parser memory to the stack.
+ */
+void TY_(pushMemory)( TidyDocImpl* doc, TidyParserMemory data );
+
+
+/**
  *  Is used to perform a node integrity check recursively after parsing
  *  an HTML or XML document.
  *  @note Actual performance of this check can be disabled by defining the
@@ -49,7 +132,7 @@
  *  @param node The root node for the integrity check.
  *  @returns Returns yes or no indicating integrity of the node structure.
  */
-Bool TY_(CheckNodeIntegrity)(Node *node);
+TY_PRIVATE Bool TY_(CheckNodeIntegrity)(Node *node);
 
 
 /**
@@ -60,7 +143,7 @@ Bool TY_(CheckNodeIntegrity)(Node *node);
  *  @param node The node to check.
  *  @returns The result of the check.
  */
-Bool TY_(TextNodeEndWithSpace)( Lexer *lexer, Node *node );
+TY_PRIVATE Bool TY_(TextNodeEndWithSpace)( Lexer *lexer, Node *node );
 
 
 /**
@@ -70,7 +153,7 @@ Bool TY_(TextNodeEndWithSpace)( Lexer *lexer, Node *node );
  *  @param node The node to check.
  *  @returns The result of the check.
  */
-Bool TY_(IsNewNode)(Node *node);
+TY_PRIVATE Bool TY_(IsNewNode)(Node *node);
 
 
 /**
@@ -83,7 +166,7 @@ Bool TY_(IsNewNode)(Node *node);
  *  @param expected If the old node was not expected to be found in this
  *    particular location, a report will be generated.
  */
-void TY_(CoerceNode)(TidyDocImpl* doc, Node *node, TidyTagId tid, Bool obsolete, Bool expected);
+TY_PRIVATE void TY_(CoerceNode)(TidyDocImpl* doc, Node *node, TidyTagId tid, Bool obsolete, Bool expected);
 
 
 /**
@@ -91,24 +174,24 @@ void TY_(CoerceNode)(TidyDocImpl* doc, Node *node, TidyTagId tid, Bool obsolete,
  *  @param node The node to remove.
  *  @returns Returns the removed node.
  */
-Node *TY_(RemoveNode)(Node *node);
+TY_PRIVATE Node *TY_(RemoveNode)(Node *node);
 
 
 /**
  *  Remove node from markup tree and discard it.
- *  @param doc The Tidy document from which to discarb the node.
+ *  @param doc The Tidy document from which to discard the node.
  *  @param element The node to discard.
  *  @returns Returns the next node.
  */
-Node *TY_(DiscardElement)( TidyDocImpl* doc, Node *element);
+TY_PRIVATE Node *TY_(DiscardElement)( TidyDocImpl* doc, Node *element);
 
 
 /**
- *  Insert node into markup tree as the firt element of content of element.
+ *  Insert node into markup tree as the first element of content of element.
  *  @param element The new destination node.
  *  @param node The node to insert.
  */
-void TY_(InsertNodeAtStart)(Node *element, Node *node);
+TY_PRIVATE void TY_(InsertNodeAtStart)(Node *element, Node *node);
 
 
 /**
@@ -116,7 +199,7 @@ void TY_(InsertNodeAtStart)(Node *element, Node *node);
  *  @param element The new destination node.
  *  @param node The node to insert.
  */
-void TY_(InsertNodeAtEnd)(Node *element, Node *node);
+TY_PRIVATE void TY_(InsertNodeAtEnd)(Node *element, Node *node);
 
 
 /**
@@ -124,7 +207,7 @@ void TY_(InsertNodeAtEnd)(Node *element, Node *node);
  *  @param element The node before which the node is inserted.
  *  @param node The node to insert.
  */
-void TY_(InsertNodeBeforeElement)(Node *element, Node *node);
+TY_PRIVATE void TY_(InsertNodeBeforeElement)(Node *element, Node *node);
 
 
 /**
@@ -132,7 +215,7 @@ void TY_(InsertNodeBeforeElement)(Node *element, Node *node);
  *  @param element The node after which the node is inserted.
  *  @param node The node to insert.
  */
-void TY_(InsertNodeAfterElement)(Node *element, Node *node);
+TY_PRIVATE void TY_(InsertNodeAfterElement)(Node *element, Node *node);
 
 
 /**
@@ -141,7 +224,7 @@ void TY_(InsertNodeAfterElement)(Node *element, Node *node);
  *  @param element The element to trim.
  *  @returns Returns the next node.
  */
-Node *TY_(TrimEmptyElement)( TidyDocImpl* doc, Node *element );
+TY_PRIVATE Node *TY_(TrimEmptyElement)( TidyDocImpl* doc, Node *element );
 
 
 /**
@@ -150,7 +233,7 @@ Node *TY_(TrimEmptyElement)( TidyDocImpl* doc, Node *element );
  *  @param node The element to trim.
  *  @returns Returns the next node.
  */
-Node* TY_(DropEmptyElements)(TidyDocImpl* doc, Node* node);
+TY_PRIVATE Node* TY_(DropEmptyElements)(TidyDocImpl* doc, Node* node);
 
 
 /**
@@ -160,7 +243,7 @@ Node* TY_(DropEmptyElements)(TidyDocImpl* doc, Node* node);
  *  @param node The node to test.
  *  @returns Returns the result of the test.
  */
-Bool TY_(IsBlank)(Lexer *lexer, Node *node);
+TY_PRIVATE Bool TY_(IsBlank)(Lexer *lexer, Node *node);
 
 
 /**
@@ -169,7 +252,7 @@ Bool TY_(IsBlank)(Lexer *lexer, Node *node);
  *  @param node The node to test.
  *  @returns Returns the result of the test.
  */
-Bool TY_(IsJavaScript)(Node *node);
+TY_PRIVATE Bool TY_(IsJavaScript)(Node *node);
 
 
 /**
@@ -178,7 +261,7 @@ Bool TY_(IsJavaScript)(Node *node);
  *  remaining nodes. HTML is the root node.
  *  @param doc The Tidy document.
  */
-void TY_(ParseDocument)( TidyDocImpl* doc );
+TY_PRIVATE void TY_(ParseDocument)( TidyDocImpl* doc );
 
 
 /**
@@ -188,18 +271,17 @@ void TY_(ParseDocument)( TidyDocImpl* doc );
  *  @param element The node to test.
  *  @returns Returns the result of the test.
  */
-Bool TY_(XMLPreserveWhiteSpace)( TidyDocImpl* doc, Node *element );
+TY_PRIVATE Bool TY_(XMLPreserveWhiteSpace)( TidyDocImpl* doc, Node *element );
 
 
 /**
  *  Parses a document after lexing using the XML parser.
  *  @param doc The Tidy document.
  */
-void TY_(ParseXMLDocument)( TidyDocImpl* doc );
+TY_PRIVATE void TY_(ParseXMLDocument)( TidyDocImpl* doc );
 
 
 /** @} end parser_h group */
 /** @} end internal_api group */
 
 #endif /* __PARSER_H__ */
-

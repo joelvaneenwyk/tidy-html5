@@ -326,7 +326,7 @@ TIDY_EXPORT Bool TIDY_CALL tidySetPanicCall( TidyPanic fpanic );
  **
  ** For an excellent example of how to invoke LibTidy, please consult
  ** `console/tidy.c:main()` for in-depth implementation details. A simplified
- ** example can be seen on our site: http://www.html-tidy.org/developer/
+ ** example can be seen on our site: https://www.html-tidy.org/developer/
  **
  ** @{
  ******************************************************************************/
@@ -1568,7 +1568,9 @@ TIDY_EXPORT int TIDY_CALL         tidyParseFile(TidyDoc tdoc,    /**< The tidy d
  */
 TIDY_EXPORT int TIDY_CALL         tidyParseStdin( TidyDoc tdoc );
 
-/** Parse markup in given string.
+/** Parse markup in given string. Note that the supplied string is of type
+ ** `ctmbstr` based on `char` and therefore doesn't support the use of
+ ** UTF-16 strings. Use `tidyParseBuffer()` if parsing multibyte strings.
  ** @result Returns the highest of `2` indicating that errors were present in
  **         the document, `1` indicating warnings, and `0` in the case of
  **         everything being okay.
@@ -1914,7 +1916,8 @@ TIDY_EXPORT Bool TIDY_CALL tidyNodeHasText(TidyDoc tdoc, /**< The document to qu
                                            TidyNode tnod /**< The node to query. */
                                            );
 
-/** Gets the text of a node and places it into the given TidyBuffer.
+/** Gets the text of a node and places it into the given TidyBuffer. The text will be terminated with a `TidyNewline`.
+ ** If you want the raw utf-8 stream see `tidyNodeGetValue()`.
  ** @result Returns a bool indicating success or not.
  */
 TIDY_EXPORT Bool TIDY_CALL tidyNodeGetText(TidyDoc tdoc,   /**< The document to query. */
@@ -2121,6 +2124,16 @@ TIDY_EXPORT ctmbstr TIDY_CALL tidyLocalizedStringN(uint messageType, /**< The me
  ** @result Returns the desired string.
  */
 TIDY_EXPORT ctmbstr TIDY_CALL tidyLocalizedString( uint messageType );
+
+/** Provides a string given `messageType` in the default localization for
+ ** `quantity`. Some strings have one or more plural forms, and this function
+ ** will ensure that the correct singular or plural form is returned for the
+ ** specified quantity.
+ ** @result Returns the desired string.
+ */
+TIDY_EXPORT ctmbstr TIDY_CALL tidyDefaultStringN(uint messageType, /**< The message type. */
+                                                 uint quantity     /**< The quantity. */
+                                                 );
 
 /** Provides a string given `messageType` in the default localization (which
  ** is `en`).

@@ -112,6 +112,7 @@ TidyDocImpl* tidyDocCreate( TidyAllocator *allocator )
     TY_(InitAttrs)( doc );
     TY_(InitConfig)( doc );
     TY_(InitPrintBuf)( doc );
+    TY_(InitParserStack)( doc );
 
     /* Set the locale for tidy's output. This both configures
     ** LibTidy to use the environment's locale as well as the
@@ -172,6 +173,7 @@ void          tidyDocRelease( TidyDocImpl* doc )
          *  to determine which hash is to be used, so free it last.
         \*/
         TY_(FreeLexer)( doc );
+        TY_(FreeParserStack)( doc );
         TidyDocFree( doc, doc );
     }
 }
@@ -1578,7 +1580,7 @@ static struct _html5Info
     { "tt", TidyTag_TT },
     { 0, 0 }
 };
-Bool inRemovedInfo( uint tid )
+static Bool inRemovedInfo( uint tid )
 {
     int i;
     for (i = 0; ; i++) {
@@ -1626,17 +1628,21 @@ static Bool nodeHasAlignAttr( Node *node )
  *
  *  See also: http://www.whatwg.org/specs/web-apps/current-work/multipage/obsolete.html#obsolete
  */
-void TY_(CheckHTML5)( TidyDocImpl* doc, Node* node )
+static void TY_(CheckHTML5)( TidyDocImpl* doc, Node* node )
 {
+    Stack *stack = TY_(newStack)(doc, 16);
     Bool clean = cfgBool( doc, TidyMakeClean );
     Bool already_strict = cfgBool( doc, TidyStrictTagsAttr );
     Node* body = TY_(FindBody)( doc );
+    Node* next;
     Bool warn = yes;    /* should this be a warning, error, or report??? */
     AttVal* attr = NULL;
     int i = 0;
 
     while (node)
     {
+        next = node->next;
+        
         if ( nodeHasAlignAttr( node ) ) {
             /* @todo: Is this for ALL elements that accept an 'align' attribute,
              * or should this be a sub-set test?
@@ -1790,10 +1796,15 @@ void TY_(CheckHTML5)( TidyDocImpl* doc, Node* node )
             }
 
         if (node->content)
-            TY_(CheckHTML5)( doc, node->content );
-        
-        node = node->next;
+        {
+            TY_(push)(stack, next);
+            node = node->content;
+            continue;
+        }
+
+        node = next ? next : TY_(pop)(stack);
     }
+    TY_(freeStack)(stack);
 }
 /*****************************************************************************
  *  END HTML5 STUFF
@@ -1812,8 +1823,10 @@ void TY_(CheckHTML5)( TidyDocImpl* doc, Node* node )
  * The propriety checks are *always* run as they have always been an integral
  * part of Tidy. The version checks are controlled by `strict-tags-attributes`.
  */
-void TY_(CheckHTMLTagsAttribsVersions)( TidyDocImpl* doc, Node* node )
+static void TY_(CheckHTMLTagsAttribsVersions)( TidyDocImpl* doc, Node* node )
 {
+    Stack *stack = TY_(newStack)(doc, 16);
+    Node *next;
     uint versionEmitted = doc->lexer->versionEmitted;
     uint declared = doc->lexer->doctype;
     uint version = versionEmitted == 0 ? declared : versionEmitted;
@@ -1828,6 +1841,8 @@ void TY_(CheckHTMLTagsAttribsVersions)( TidyDocImpl* doc, Node* node )
 
     while (node)
     {
+        next = node->next;
+
         /* This bit here handles our HTML tags */
         if ( TY_(nodeIsElement)(node) && node->tag ) {
 
@@ -1912,10 +1927,15 @@ void TY_(CheckHTMLTagsAttribsVersions)( TidyDocImpl* doc, Node* node )
         }
 
         if (node->content)
-            TY_(CheckHTMLTagsAttribsVersions)( doc, node->content );
-        
-        node = node->next;
+        {
+            TY_(push)(stack, next);
+            node = node->content;
+            continue;
+        }
+
+        node = next ? next : TY_(pop)(stack);
     }
+    TY_(freeStack)(stack);
 }
 
 
@@ -2028,16 +2048,52 @@ void dbg_show_node( TidyDocImpl* doc, Node *node, int caller, int indent )
     SPRTF("\n");
 }
 
+/* Make this non-recursive, because we really do want to eliminate
+   recursion that makes us crash, even when debugging.
+ */
 void dbg_show_all_nodes( TidyDocImpl* doc, Node *node, int indent )
 {
-    while (node)
+    Stack *stack = TY_(newStack)(doc, 16);
+    Node *child = NULL;
+    Node *next = NULL;
+
+    dbg_show_node( doc, node, 0, indent++ );
+
+    if ( (child = node->content) )
     {
-        dbg_show_node( doc, node, 0, indent );
-        dbg_show_all_nodes( doc, node->content, indent + 1 );
-        node = node->next;
+        while ( child )
+        {
+            if ( (next = child->next) )
+            {
+                next->idx = indent;
+            }
+            
+            dbg_show_node( doc, child, 0, indent );
+            
+            if (child->content)
+            {
+                TY_(push)(stack, next);
+                indent++;
+                child = child->content;
+                continue;
+            }
+
+            if (next)
+            {
+                child = next;
+            }
+            else
+            {
+                if ( (child = TY_(pop)(stack)) )
+                {
+                    indent = child->idx;
+                }
+            }
+
+        }
+        TY_(freeStack)(stack);
     }
 }
-
 #endif
 
 int         tidyDocCleanAndRepair( TidyDocImpl* doc )
@@ -2225,16 +2281,11 @@ int         tidyDocSaveStream( TidyDocImpl* doc, StreamOut* out )
     Bool asciiChars   = cfgBool(doc, TidyAsciiChars);
     Bool makeBare     = cfgBool(doc, TidyMakeBare);
     Bool escapeCDATA  = cfgBool(doc, TidyEscapeCdata);
-    Bool ppWithTabs   = cfgBool(doc, TidyPPrintTabs);
     TidyAttrSortStrategy sortAttrStrat = cfg(doc, TidySortAttributes);
     TidyConfigChangeCallback callback = doc->pConfigChangeCallback;
     doc->pConfigChangeCallback = NULL;
 
-    if (ppWithTabs)
-        TY_(PPrintTabs)();
-    else
-        TY_(PPrintSpaces)();
-
+    
     if (escapeCDATA)
         TY_(ConvertCDATANodes)(doc, &doc->root);
 
@@ -2639,6 +2690,11 @@ ctmbstr TIDY_CALL tidyLocalizedStringN( uint messageType, uint quantity )
 ctmbstr TIDY_CALL tidyLocalizedString( uint messageType )
 {
     return TY_(tidyLocalizedString)( messageType );
+}
+
+ctmbstr TIDY_CALL tidyDefaultStringN( uint messageType, uint quantity )
+{
+    return TY_(tidyDefaultStringN)( messageType, quantity);
 }
 
 ctmbstr TIDY_CALL tidyDefaultString( uint messageType )

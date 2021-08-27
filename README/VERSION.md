@@ -4,7 +4,7 @@ This document provides an explanation of how to interpret HTML Tidy’s version 
 
 ## Background
 
-**HTML Tidy** uses a modified version of [Semantic Versioning](http://semver.org/), and so it’s important to understand what the version number of **HTML Tidy** means to you, and how it might impact your workflow.
+**HTML Tidy** uses a modified version of [Semantic Versioning](https://semver.org/), and so it’s important to understand what the version number of **HTML Tidy** means to you, and how it might impact your workflow.
 
 When you execute `tidy -v` on the command line, you might see responses such as:
 
@@ -70,7 +70,7 @@ add_definitions ( -DLIBTIDY_VERSION="${LIBTIDY_VERSION}" )
 add_definitions ( -DRELEASE_DATE="${tidy_YEAR}/${tidy_MONTH}/${tidy_DAY}" )
 ~~~
 
-And in `CMakeLists.txt` there is the posibility to define another macro, when and if required:
+And in `CMakeLists.txt` there is the possibility to define another macro, when and if required:
 
 ~~~
 # add_definitions ( -DRC_NUMBER="D231" )

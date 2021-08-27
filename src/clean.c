@@ -1339,7 +1339,7 @@ static Bool InlineElementToCSS( TidyDocImpl* doc, Node* node,
     ctmbstr CSSeq;
 
     /* if node is the only child of parent element then leave alone
-          Do so only if BlockStyle may be succesful. */
+          Do so only if BlockStyle may be successful. */
     if ( node->parent->content == node && node->next == NULL &&
          (CanApplyBlockStyle(node->parent)
           || CanApplyInlineStyle(node->parent)) )
@@ -1366,7 +1366,7 @@ static Bool Font2Span( TidyDocImpl* doc, Node *node, Node **pnode )
     if ( nodeIsFONT(node) )
     {
         /* if node is the only child of parent element then leave alone
-          Do so only if BlockStyle may be succesful. */
+          Do so only if BlockStyle may be successful. */
         if ( node->parent->content == node && node->next == NULL &&
              CanApplyBlockStyle(node->parent) )
             return no;
@@ -1585,11 +1585,16 @@ void TY_(List2BQ)( TidyDocImpl* doc, Node* node )
 */
 void TY_(BQ2Div)( TidyDocImpl* doc, Node *node )
 {
+    Stack *stack = TY_(newStack)(doc, 16);
+    Node *next;
+    
     tmbchar indent_buf[ 32 ];
     uint indent;
 
     while (node)
     {
+        next = node->next;
+        
         if ( nodeIsBLOCKQUOTE(node) && node->implicit )
         {
             indent = 1;
@@ -1602,20 +1607,29 @@ void TY_(BQ2Div)( TidyDocImpl* doc, Node *node )
                 StripOnlyChild( doc, node );
             }
 
-            if (node->content)
-                TY_(BQ2Div)( doc, node->content );
-
             TY_(tmbsnprintf)(indent_buf, sizeof(indent_buf), "margin-left: %dem",
                              2*indent);
 
             RenameElem( doc, node, TidyTag_DIV );
             TY_(AddStyleProperty)(doc, node, indent_buf );
+
+            if (node->content)
+            {
+                TY_(push)(stack, next);
+                node = node->content;
+                continue;
+            }
         }
         else if (node->content)
-            TY_(BQ2Div)( doc, node->content );
+        {
+            TY_(push)(stack, next);
+            node = node->content;
+            continue;
+        }
 
-        node = node->next;
+        node = next ? next : TY_(pop)(stack);
     }
+    TY_(freeStack)(stack);
 }
 
 
@@ -1882,7 +1896,7 @@ static Bool SingleSpace( Lexer* lexer, Node* node )
 */
 void TY_(CleanWord2000)( TidyDocImpl* doc, Node *node)
 {
-    /* used to a list from a sequence of bulletted p's */
+    /* used to a list from a sequence of bulleted p's */
     Lexer* lexer = doc->lexer;
     Node* list = NULL;
     AttVal *next_attr, *attval;
@@ -1896,7 +1910,7 @@ void TY_(CleanWord2000)( TidyDocImpl* doc, Node *node)
             if ( !TY_(IsWord2000) (doc) ) /* Is. #896 */
                 return;
 
-            /* Output proprietary attributes to maintain errout compatability
+            /* Output proprietary attributes to maintain errout compatibility
              * with traditional Tidy. This is a result of moving all of the
              * proprietary checks to near the end of the cleanup process,
              * meaning this result would not ordinarily be displayed. 
@@ -1984,7 +1998,7 @@ void TY_(CleanWord2000)( TidyDocImpl* doc, Node *node)
         /* discards <o:p> which encodes the paragraph mark */
         if ( node->tag && TY_(tmbstrcmp)(node->tag->name,"o:p")==0)
         {
-            /* Output proprietary elements to maintain errout compatability
+            /* Output proprietary elements to maintain errout compatibility
              * with traditional Tidy. This is a result of moving all of the
              * proprietary checks to near the end of the cleanup process,
              * meaning this result would not ordinarily be displayed.
@@ -2303,7 +2317,7 @@ Bool TY_(TidyMetaCharset)(TidyDocImpl* doc)
             }
             else
             {
-                /* fix a mis-match */
+                /* fix a mismatch */
                 if (charsetFound)
                 {
                     prevNode = currentNode->prev;
@@ -2578,6 +2592,7 @@ void TY_(ConvertCDATANodes)(TidyDocImpl* doc, Node* node)
 */
 void TY_(FixLanguageInformation)(TidyDocImpl* doc, Node* node, Bool wantXmlLang, Bool wantLang)
 {
+    Stack *stack = TY_(newStack)(doc, 16);
     Node* next;
 
     while (node)
@@ -2621,10 +2636,15 @@ void TY_(FixLanguageInformation)(TidyDocImpl* doc, Node* node, Bool wantXmlLang,
         }
 
         if (node->content)
-            TY_(FixLanguageInformation)(doc, node->content, wantXmlLang, wantLang);
+        {
+            TY_(push)(stack, next);
+            node = node->content;
+            continue;
+        }
 
-        node = next;
+        node = next ? next : TY_(pop)(stack);
     }
+    TY_(freeStack)(stack);
 }
 
 /*
@@ -2656,6 +2676,7 @@ void TY_(FixXhtmlNamespace)(TidyDocImpl* doc, Bool wantXmlns)
 */
 void TY_(FixAnchors)(TidyDocImpl* doc, Node *node, Bool wantName, Bool wantId)
 {
+    Stack *stack = TY_(newStack)(doc, 16);
     Node* next;
 
     while (node)
@@ -2725,10 +2746,15 @@ void TY_(FixAnchors)(TidyDocImpl* doc, Node *node, Bool wantName, Bool wantId)
         }
 
         if (node->content)
-            TY_(FixAnchors)(doc, node->content, wantName, wantId);
+        {
+            TY_(push)(stack, next);
+            node = node->content;
+            continue;
+        }
 
-        node = next;
+        node = next ? next : TY_(pop)(stack);
     }
+    TY_(freeStack)(stack);
 }
 
 /* Issue #567 - move style elements from body to head 
@@ -2736,30 +2762,43 @@ void TY_(FixAnchors)(TidyDocImpl* doc, Node *node, Bool wantName, Bool wantId)
  */
 static void StyleToHead(TidyDocImpl* doc, Node *head, Node *node, Bool fix, int indent)
 {
-	Node *next;
-	while (node)
-	{
-		next = node->next;	/* get 'next' now , in case the node is moved */
-		/* dbg_show_node(doc, node, 0, indent); */
-		if (nodeIsSTYLE(node))
-		{
-			if (fix)
-			{
-				TY_(RemoveNode)(node); /* unhook style node from body */
-				TY_(InsertNodeAtEnd)(head, node);   /* add to end of head */
-				TY_(Report)(doc, node, head, MOVED_STYLE_TO_HEAD); /* report move */
-			}
-			else
-			{
-				TY_(Report)(doc, node, head, FOUND_STYLE_IN_BODY);
-			}
-		}
-		else if (node->content)
-		{
-			StyleToHead(doc, head, node->content, fix, indent + 1);
-		}
-		node = next;	/* process the 'next', if any */
-	}
+    Stack *stack = TY_(newStack)(doc, 16);
+    Node *next;
+    
+    while (node)
+    {
+        next = node->next;
+        
+        if (nodeIsSTYLE(node))
+        {
+            if (fix)
+            {
+                TY_(RemoveNode)(node); /* unhook style node from body */
+                TY_(InsertNodeAtEnd)(head, node);   /* add to end of head */
+                TY_(Report)(doc, node, head, MOVED_STYLE_TO_HEAD); /* report move */
+            }
+            else
+            {
+                TY_(Report)(doc, node, head, FOUND_STYLE_IN_BODY);
+            }
+        }
+        else if (node->content)
+        {
+            TY_(push)(stack, next);
+            node = node->content;
+            indent++;
+            continue;
+        }
+        
+        if (next)
+            node = next;
+        else
+        {
+            node = TY_(pop)(stack);
+            indent--;
+        }
+    }
+    TY_(freeStack)(stack);
 }
 
 

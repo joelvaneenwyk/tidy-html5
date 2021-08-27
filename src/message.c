@@ -50,9 +50,9 @@ static char* TagToString(Node* tag, char* buf, size_t count)
         else if (tag->type == DocTypeTag)
             TY_(tmbsnprintf)(buf, count, "<!DOCTYPE>");
         else if (tag->type == TextNode)
-            TY_(tmbsnprintf)(buf, count, "%s", tidyLocalizedString(STRING_PLAIN_TEXT));
+            TY_(tmbsnprintf)(buf, count, "%s", "STRING_PLAIN_TEXT");
         else if (tag->type == XmlDecl)
-            TY_(tmbsnprintf)(buf, count, "%s", tidyLocalizedString(STRING_XML_DECLARATION));
+            TY_(tmbsnprintf)(buf, count, "%s", "STRING_XML_DECLARATION");
         else if (tag->element)
             TY_(tmbsnprintf)(buf, count, "%s", tag->element);
     }
@@ -103,7 +103,7 @@ static ctmbstr HTMLVersion( TidyDocImpl* doc )
 
 /*********************************************************************
  * Message Writing Functions
- * These funtions provide final, formatted output to the output sink.
+ * These functions provide final, formatted output to the output sink.
  *********************************************************************/
 
 
@@ -209,7 +209,7 @@ static void messageOut( TidyMessageImpl *message )
 
         /* Always add a trailing newline. Reports require this, and dialogue
            messages will be better spaced out without having to fill the
-           language file with superflous newlines. */
+           language file with superfluous newlines. */
         TY_(WriteChar)( '\n', doc->errout );
     }
 
@@ -229,7 +229,7 @@ static void messageOut( TidyMessageImpl *message )
 
 
 /* Functions of this type will create new instances of TidyMessage specific to
-** the type of report being emitted. Many messages share the same fomatter for
+** the type of report being emitted. Many messages share the same formatter for
 ** messages, but new ones can be written as required. Please have a look at
 ** the existing formatters in order to determine if an existing signature is
 ** compatible with the report you wish to output before adding a new formatter.
@@ -792,7 +792,7 @@ TidyMessageImpl *formatStandard(TidyDocImpl* doc, Node *element, Node *node, uin
 
         case TAG_NOT_ALLOWED_IN:
             /* Can we use `rpt` here? No; `element` has a value in every case. */
-            return TY_(tidyMessageCreateWithNode)(doc, node, code, level, nodedesc, element->element );
+            return TY_(tidyMessageCreateWithNode)(doc, node, code, level, nodedesc, element ? element->element : NULL );
 
         case INSERTING_TAG:
         case MISSING_STARTTAG:
@@ -804,7 +804,7 @@ TidyMessageImpl *formatStandard(TidyDocImpl* doc, Node *element, Node *node, uin
 
         case UNEXPECTED_ENDTAG_IN:
             /* Can we use `rpt` here? No; `element` has a value in every case. */
-            return TY_(tidyMessageCreateWithNode)(doc, node, code, level, node->element, element->element );
+            return TY_(tidyMessageCreateWithNode)(doc, node, code, level, node->element, element ? element->element : NULL );
 
         case BAD_CDATA_CONTENT:
         case CONTENT_AFTER_BODY:
@@ -848,16 +848,16 @@ TidyMessageImpl *formatStandard(TidyDocImpl* doc, Node *element, Node *node, uin
         case MISSING_ENDTAG_FOR:
         case MISSING_ENDTAG_OPTIONAL:
         case PREVIOUS_LOCATION:
-            return TY_(tidyMessageCreateWithNode)(doc, rpt, code, level, element->element );
+            return TY_(tidyMessageCreateWithNode)(doc, rpt, code, level, element? element->element : NULL );
 
         case MISSING_ENDTAG_BEFORE:
-            return TY_(tidyMessageCreateWithNode)(doc, rpt, code, level, element->element, nodedesc );
+            return TY_(tidyMessageCreateWithNode)(doc, rpt, code, level, element? element->element : NULL, nodedesc );
 
         case COERCE_TO_ENDTAG:
         case NON_MATCHING_ENDTAG:
             return TY_(tidyMessageCreateWithNode)(doc, rpt, code, level, node->element, node->element );
         case TOO_MANY_ELEMENTS_IN:
-            return TY_(tidyMessageCreateWithNode)(doc, rpt, code, level, node->element, element->element);
+            return TY_(tidyMessageCreateWithNode)(doc, rpt, code, level, node->element, element ? element->element : NULL);
 
     }
 
@@ -890,7 +890,7 @@ TidyMessageImpl *formatStandardDynamic(TidyDocImpl* doc, Node *element, Node *no
 /*********************************************************************
  * High Level Message Writing Functions
  * When adding new reports to LibTidy, preference should be given
- * to one of the existing, general pupose message writing functions
+ * to one of the existing, general purpose message writing functions
  * above, if possible, otherwise try to use one of these, or as a
  * last resort add a new one in this section.
  *********************************************************************/
@@ -937,7 +937,7 @@ static void vReport(TidyDocImpl* doc, Node *element, Node *node, uint code, va_l
 ** type safety by using the variable arguments. To counter this some convenience
 ** report output functions exist, too. Any new reports you wish to create must
 ** be able to use this function signature, although convenience functions should
-** be added to abstract the full fuction signature and to preserve type safety.
+** be added to abstract the full function signature and to preserve type safety.
 */
 void TY_(Report)(TidyDocImpl* doc, Node *element, Node *node, uint code, ...)
 {
@@ -1070,10 +1070,10 @@ static struct _dialogueDispatchTable {
 
 
 /* This message formatter for dialogue messages should be capable of formatting
-** every message, because they're not all the complex and there aren't that
+** every message, because they're not all that complex and there aren't that
 ** many.
 */
-TidyMessageImpl *formatDialogue( TidyDocImpl* doc, uint code, TidyReportLevel level, va_list args )
+static TidyMessageImpl *formatDialogue( TidyDocImpl* doc, uint code, TidyReportLevel level, va_list args )
 {
     switch (code)
     {
@@ -1087,8 +1087,8 @@ TidyMessageImpl *formatDialogue( TidyDocImpl* doc, uint code, TidyReportLevel le
         case STRING_ERROR_COUNT:
         case STRING_NOT_ALL_SHOWN:
             return TY_(tidyMessageCreate)( doc, code, level,
-                                           doc->warnings, tidyLocalizedStringN( STRING_ERROR_COUNT_WARNING, doc->warnings ),
-                                           doc->errors, tidyLocalizedStringN( STRING_ERROR_COUNT_ERROR, doc->errors ) );
+                                           doc->warnings, "STRING_ERROR_COUNT_WARNING",
+                                           doc->errors, "STRING_ERROR_COUNT_ERROR" );
 
         case FOOTNOTE_TRIM_EMPTY_ELEMENT:
         case STRING_HELLO_ACCESS:
@@ -1286,7 +1286,7 @@ void TY_(ReportMarkupVersion)( TidyDocImpl* doc )
 
         TY_(Report)( doc, NULL, NULL, STRING_CONTENT_LOOKS, vers );
 
-        /* Warn about missing sytem identifier (SI) in emitted doctype */
+        /* Warn about missing system identifier (SI) in emitted doctype */
         if ( TY_(WarnMissingSIInEmittedDocType)( doc ) )
             TY_(Report)( doc, NULL, NULL, STRING_NO_SYSID );
     }
@@ -1504,7 +1504,7 @@ uint TY_(getNextErrorCode)( TidyIterator* iter )
     }
     
     *iter = (TidyIterator)( itemIndex <= tidyErrorCodeListSize() ? itemIndex : (size_t)0 );
-    return item->value;
+    return item ? item->value : 0;
 }
 
 

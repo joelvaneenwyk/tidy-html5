@@ -40,7 +40,6 @@ struct printfArg {
 };
 
 
-
 /** Returns a pointer to an allocated array of `printfArg` given a format
  ** string and a va_list, or NULL if not successful or no parameters were
  ** given. Parameter `rv` will return with the count of zero or more
@@ -130,6 +129,22 @@ static TidyMessageImpl *tidyMessageCreateInitV( TidyDocImpl *doc,
     TY_(tmbvsnprintf)(result->message, sizeMessageBuf, result->messageFormat, args_copy);
     va_end(args_copy);
 
+    /* Some things already hit us localized, and some things need to be
+       localized here. Look for these codewords and replace them here.
+     */
+    TY_(strrep)(result->messageDefault, "STRING_PLAIN_TEXT",      tidyDefaultString(STRING_PLAIN_TEXT));
+    TY_(strrep)(result->message,        "STRING_PLAIN_TEXT",      tidyLocalizedString(STRING_PLAIN_TEXT));
+
+    TY_(strrep)(result->messageDefault, "STRING_XML_DECLARATION", tidyDefaultString(STRING_XML_DECLARATION));
+    TY_(strrep)(result->message,        "STRING_XML_DECLARATION", tidyLocalizedString(STRING_XML_DECLARATION));
+
+    TY_(strrep)(result->messageDefault, "STRING_ERROR_COUNT_WARNING", tidyDefaultStringN(STRING_ERROR_COUNT_WARNING, doc->warnings));
+    TY_(strrep)(result->message,        "STRING_ERROR_COUNT_WARNING", tidyLocalizedStringN(STRING_ERROR_COUNT_WARNING, doc->warnings));
+
+    TY_(strrep)(result->messageDefault, "STRING_ERROR_COUNT_ERROR", tidyDefaultStringN(STRING_ERROR_COUNT_ERROR, doc->errors));
+    TY_(strrep)(result->message,        "STRING_ERROR_COUNT_ERROR", tidyLocalizedStringN(STRING_ERROR_COUNT_ERROR, doc->errors));
+
+
     result->messagePosDefault = TidyDocAlloc(doc, sizeMessageBuf);
     result->messagePos = TidyDocAlloc(doc, sizeMessageBuf);
 
@@ -179,7 +194,7 @@ static TidyMessageImpl *tidyMessageCreateInitV( TidyDocImpl *doc,
     if ( ( cfgBool(doc, TidyMuteShow) == yes ) && level <= TidyFatal )
     {
         /*\ Issue #655 - Unsafe to use output buffer as one of the va_list
-         *  input parameters in some snprintf implmentations.
+         *  input parameters in some snprintf implementations.
         \*/
         ctmbstr pc = TY_(tidyErrorCodeAsKey)(code);
         i = TY_(tmbstrlen)(result->messageOutputDefault);
@@ -188,7 +203,6 @@ static TidyMessageImpl *tidyMessageCreateInitV( TidyDocImpl *doc,
         i = TY_(tmbstrlen)(result->messageOutput);
         if (i < sizeMessageBuf)
             TY_(tmbsnprintf)(result->messageOutput + i, sizeMessageBuf - i, " (%s)", pc );
-        i = 0;
     }
 
     result->allowMessage = yes;
